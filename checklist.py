@@ -75,7 +75,7 @@ def main():
 
     5. **Reputation and Responsibility**: Demonstrating environmental responsibility can enhance your organization's reputation and appeal to environmentally conscious stakeholders.
 
-    This tool helps you assess and improve the environmental friendliness of your events. Simply check off the measures you've implemented, add any custom eco-friendly actions, and get instant feedback on your event's sustainability score.
+    This tool helps you assess and improve the environmental friendliness of your events. Check off the measures you've implemented, mark those that aren't applicable to your event, and get instant feedback on your event's sustainability score.
 
     Created by Mark Kirkpatrick (mark.kirkpatrick@aecom.com)
     """)
@@ -112,105 +112,104 @@ def display_checklist():
         st.subheader(category)
         for i, item in enumerate(items):
             key = f"{category}_{i}"
-            col1, col2 = st.columns([4, 1])
+            col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
-                checked = st.checkbox(item[0], value=item[1], key=key)
+                st.markdown(f"{item[0]} <div class='tooltip'>ℹ️<span class='tooltiptext'>{item[3]}</span></div>", unsafe_allow_html=True)
             with col2:
-                st.markdown(f'<div class="tooltip">ℹ️<span class="tooltiptext">{item[2]}</span></div>', unsafe_allow_html=True)
-            st.session_state.checklist[category][i] = (item[0], checked, item[2])
+                implemented = st.checkbox("Implemented", value=item[1], key=f"{key}_implemented")
+            with col3:
+                not_applicable = st.checkbox("N/A", value=item[2], key=f"{key}_na")
+            st.session_state.checklist[category][i] = (item[0], implemented, not_applicable, item[3])
 
 def display_custom_measures():
     st.header("Custom Eco-Friendly Measures")
     new_measure = st.text_input("Add a custom eco-friendly measure:")
     if st.button("Add Measure"):
         if new_measure:
-            st.session_state.custom_measures.append((new_measure, False))
+            st.session_state.custom_measures.append((new_measure, False, False))
             st.success(f"Added: {new_measure}")
 
     if st.session_state.custom_measures:
         st.subheader("Your Custom Measures")
-        for i, (measure, checked) in enumerate(st.session_state.custom_measures):
-            key = f"custom_{i}"
-            st.session_state.custom_measures[i] = (measure, st.checkbox(measure, value=checked, key=key))
+        for i, (measure, implemented, not_applicable) in enumerate(st.session_state.custom_measures):
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.write(measure)
+            with col2:
+                implemented = st.checkbox("Implemented", value=implemented, key=f"custom_{i}_implemented")
+            with col3:
+                not_applicable = st.checkbox("N/A", value=not_applicable, key=f"custom_{i}_na")
+            st.session_state.custom_measures[i] = (measure, implemented, not_applicable)
 
 def display_results():
     st.header("Results")
 
     # Calculate score
-    total_items = sum(len(items) for items in st.session_state.checklist.values()) + len(st.session_state.custom_measures)
-    checked_items = sum(item[1] for items in st.session_state.checklist.values() for item in items) + sum(item[1] for item in st.session_state.custom_measures)
-    score = (checked_items / total_items) * 100
+    total_applicable = 0
+    implemented = 0
+    for items in st.session_state.checklist.values():
+        for item in items:
+            if not item[2]:  # If not marked as N/A
+                total_applicable += 1
+                if item[1]:  # If implemented
+                    implemented += 1
+    
+    for measure in st.session_state.custom_measures:
+        if not measure[2]:  # If not marked as N/A
+            total_applicable += 1
+            if measure[1]:  # If implemented
+                implemented += 1
+
+    score = (implemented / total_applicable * 100) if total_applicable > 0 else 100
 
     # Display score with a progress bar
     st.subheader("Your Event's Eco-Score")
     st.progress(score / 100)
     st.write(f"Score: {score:.2f}%")
+    st.write(f"Implemented measures: {implemented} out of {total_applicable} applicable measures")
 
     # Provide suggestions
     if score < 100:
         st.subheader("Suggestions for Improvement")
         for category, items in st.session_state.checklist.items():
             for item in items:
-                if not item[1]:
+                if not item[1] and not item[2]:  # If not implemented and not N/A
                     st.write(f"- Consider implementing: {item[0]}")
-                    st.write(f"  *Tip: {item[2]}*")
-
-    # Download report
-    if st.button("Download Report"):
-        report = generate_report(st.session_state.checklist, st.session_state.custom_measures, score)
-        st.download_button(
-            label="Download Report as CSV",
-            data=report,
-            file_name="eco_event_report.csv",
-            mime="text/csv"
-        )
+                    st.write(f"  *Tip: {item[3]}*")
 
 def load_checklist():
     return {
         "Location and Transportation": [
-            ("Select a place accessible by soft mobility", False, "Choose venues near public transit or with good cycling/walking access."),
-            ("Consider a shuttle service", False, "Organize shared transportation to reduce individual car use."),
-            ("Collect information on participants' mode of transport", False, "This data helps in calculating the event's carbon footprint.")
+            ("Select a place accessible by soft mobility", False, False, "Choose venues near public transit or with good cycling/walking access."),
+            ("Consider a shuttle service", False, False, "Organize shared transportation to reduce individual car use."),
+            ("Collect information on participants' mode of transport", False, False, "This data helps in calculating the event's carbon footprint.")
         ],
         "Catering": [
-            ("Choose a zero-waste provider", False, "Look for caterers who prioritize minimal packaging and composting."),
-            ("Provide reusable utensils", False, "Use washable plates, cups, and cutlery instead of disposables."),
-            ("Offer waste-free drinks", False, "Serve beverages in bulk containers or use refillable bottles."),
-            ("Favor local, seasonal ingredients with vegetarian options", False, "This reduces transportation emissions and often has a lower environmental impact."),
-            ("Provide adequate quantities to avoid waste", False, "Careful planning can significantly reduce food waste.")
+            ("Choose a zero-waste provider", False, False, "Look for caterers who prioritize minimal packaging and composting."),
+            ("Provide reusable utensils", False, False, "Use washable plates, cups, and cutlery instead of disposables."),
+            ("Offer waste-free drinks", False, False, "Serve beverages in bulk containers or use refillable bottles."),
+            ("Favor local, seasonal ingredients with vegetarian options", False, False, "This reduces transportation emissions and often has a lower environmental impact."),
+            ("Provide adequate quantities to avoid waste", False, False, "Careful planning can significantly reduce food waste.")
         ],
         "Logistics and Equipment": [
-            ("Ensure presence of recycling bins", False, "Clearly label bins for different types of waste to encourage proper disposal."),
-            ("Use reusable decorations", False, "Invest in durable decorations that can be used for multiple events."),
-            ("Rent or use reusable exhibition stands", False, "This reduces waste and can be more cost-effective in the long run.")
+            ("Ensure presence of recycling bins", False, False, "Clearly label bins for different types of waste to encourage proper disposal."),
+            ("Use reusable decorations", False, False, "Invest in durable decorations that can be used for multiple events."),
+            ("Rent or use reusable exhibition stands", False, False, "This reduces waste and can be more cost-effective in the long run.")
         ],
         "Hotels": [
-            ("Look for eco-friendly hotels with certifications", False, "Certifications like LEED or Green Key indicate environmentally responsible practices."),
-            ("Check for sustainable development charters", False, "Even without formal certifications, many hotels have their own sustainability initiatives.")
+            ("Look for eco-friendly hotels with certifications", False, False, "Certifications like LEED or Green Key indicate environmentally responsible practices."),
+            ("Check for sustainable development charters", False, False, "Even without formal certifications, many hotels have their own sustainability initiatives.")
         ],
         "Communication": [
-            ("Inform guests of eco-friendly event participation", False, "This raises awareness and can encourage attendees to support your initiatives."),
-            ("Encourage guests to bring their own water bottle/cup", False, "This simple step can significantly reduce single-use plastic waste."),
-            ("Encourage eco-friendly transportation", False, "Provide information on public transit options or organize carpooling.")
+            ("Inform guests of eco-friendly event participation", False, False, "This raises awareness and can encourage attendees to support your initiatives."),
+            ("Encourage guests to bring their own water bottle/cup", False, False, "This simple step can significantly reduce single-use plastic waste."),
+            ("Encourage eco-friendly transportation", False, False, "Provide information on public transit options or organize carpooling.")
         ],
         "Carbon Footprint": [
-            ("Send information to ESG team for carbon footprint assessment", False, "This helps quantify the event's environmental impact and identify areas for improvement."),
-            ("Consider carbon offsetting", False, "While not a substitute for reduction efforts, offsetting can help mitigate unavoidable emissions.")
+            ("Send information to ESG team for carbon footprint assessment", False, False, "This helps quantify the event's environmental impact and identify areas for improvement."),
+            ("Consider carbon offsetting", False, False, "While not a substitute for reduction efforts, offsetting can help mitigate unavoidable emissions.")
         ]
     }
-
-def generate_report(checklist, custom_measures, score):
-    data = []
-    for category, items in checklist.items():
-        for item in items:
-            data.append({"Category": category, "Measure": item[0], "Implemented": "Yes" if item[1] else "No", "Tip": item[2]})
-    
-    for measure, implemented in custom_measures:
-        data.append({"Category": "Custom Measures", "Measure": measure, "Implemented": "Yes" if implemented else "No", "Tip": "Custom measure"})
-    
-    df = pd.DataFrame(data)
-    df = df.append({"Category": "Overall Score", "Measure": f"{score:.2f}%", "Implemented": "", "Tip": ""}, ignore_index=True)
-    return df.to_csv(index=False)
 
 if __name__ == "__main__":
     main()
