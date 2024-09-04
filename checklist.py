@@ -1,13 +1,5 @@
 import streamlit as st
 import pandas as pd
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Set page config for green theme
 st.set_page_config(
@@ -65,27 +57,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def send_email(subject, body):
-    sender_email = os.getenv("SENDER_EMAIL")
-    sender_password = os.getenv("SENDER_PASSWORD")
-    receiver_email = "mark.kirkpatrick@aecom.com"
-
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = receiver_email
-    message["Subject"] = subject
-    message.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.send_message(message)
-        return True
-    except Exception as e:
-        st.error(f"Failed to send email: {str(e)}")
-        return False
-
 def main():
     st.title("🌿 Eco-Event Scorer")
     
@@ -125,18 +96,15 @@ def main():
     else:
         display_results()
 
-    # Suggestion box
+    # Contact information
     st.sidebar.markdown("---")
     st.sidebar.subheader("Feedback & Suggestions")
-    suggestion = st.sidebar.text_area("Have any suggestions or found a bug? Let us know!")
-    if st.sidebar.button("Send Feedback"):
-        if suggestion:
-            if send_email("Eco-Event Scorer Feedback", suggestion):
-                st.sidebar.success("Thank you for your feedback!")
-            else:
-                st.sidebar.error("Failed to send feedback. Please try again later.")
-        else:
-            st.sidebar.warning("Please enter your feedback before sending.")
+    st.sidebar.markdown("""
+    If you have any suggestions, feedback, or encounter any issues while using this app, 
+    please email Mark Kirkpatrick at mark.kirkpatrick@aecom.com.
+    
+    Your input is valuable and will help improve this tool for everyone!
+    """)
 
 def display_checklist():
     st.header("Eco-Friendly Checklist")
