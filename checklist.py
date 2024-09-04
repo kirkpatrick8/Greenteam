@@ -68,16 +68,23 @@ def main():
     ]
     selected_event_type = st.selectbox("Select your corporate event type:", event_types)
 
-    # Unique identifier for the event (you might want to add more fields for a real unique identifier)
+    # Unique identifier for the event
     event_date = st.date_input("Event Date")
     event_id = f"{selected_event_type}_{event_date}"
 
+    # Load checklist based on event type
+    checklist = load_checklist(selected_event_type)
+
     # Load previous progress if it exists
     if event_id in st.session_state.progress:
-        checklist = st.session_state.progress[event_id]['checklist']
+        saved_checklist = st.session_state.progress[event_id]['checklist']
+        # Merge saved progress with current checklist
+        for category in checklist:
+            for i, item in enumerate(checklist[category]):
+                if category in saved_checklist and i < len(saved_checklist[category]):
+                    checklist[category][i] = (item[0], saved_checklist[category][i][1], saved_checklist[category][i][2], item[3])
         custom_measures = st.session_state.progress[event_id]['custom_measures']
     else:
-        checklist = load_checklist()
         custom_measures = []
 
     # Sidebar for navigation
@@ -90,7 +97,7 @@ def main():
     elif page == "Results":
         display_results(checklist, custom_measures, selected_event_type)
     elif page == "Eco-Tips":
-        display_eco_tips()
+        display_eco_tips(selected_event_type)
     else:
         display_resources()
 
@@ -210,63 +217,234 @@ def display_results(checklist, custom_measures, event_type):
                     st.write(f"- Consider implementing: {item[0]}")
                     st.write(f"  *Tip: {item[3]}*")
 
-def display_eco_tips():
-    st.header("Eco-Tips for Corporate Events")
-    tips = [
-        "Use digital invitations and event materials to reduce paper waste.",
-        "Choose venues with natural lighting to reduce energy consumption.",
-        "Offer plant-based meal options to reduce the event's carbon footprint.",
-        "Use reusable name badges and collect them at the end of the event.",
-        "Partner with local, sustainable businesses for event services and supplies.",
-        "Implement a waste sorting system with clear signage for recycling and composting.",
-        "Encourage attendees to bring their own reusable water bottles and provide water refill stations.",
-        "Use energy-efficient equipment and turn off devices when not in use.",
-        "Donate leftover food to local charities or food banks.",
-        "Offset the carbon footprint of your event through reputable carbon offset programs."
-    ]
+def display_eco_tips(event_type):
+    st.header(f"Eco-Tips for {event_type}")
+    tips = load_eco_tips(event_type)
     for tip in tips:
         st.markdown(f"• {tip}")
 
 def display_resources():
     st.header("Resources for Eco-Friendly Corporate Events")
     resources = [
-        {"name": "Sustainable Event Alliance", "url": "https://sustainable-event-alliance.org/"},
-        {"name": "Green Meeting Industry Council", "url": "https://www.gmicglobal.org/"},
-        {"name": "EcoVadis (Sustainability Ratings)", "url": "https://ecovadis.com/"},
-        {"name": "ISO 20121 - Sustainable Events", "url": "https://www.iso.org/iso-20121-sustainable-events.html"},
-        {"name": "Global Sustainable Tourism Council", "url": "https://www.gstcouncil.org/"},
+        {"name": "Sustainable event planning - Berlin Convention Office", "url": "https://convention.visitberlin.de/en/sustainable-event-planning"},
+        {"name": "The Importance of Eco-Friendly Events and How to Plan Them - Events Made Simple", "url": "https://www.eventsmadesimple.co.uk/the-importance-of-eco-friendly-events-and-how-to-plan-them/"},
+        {"name": "Sustainability Tracking Software - Momentus Technologies", "url": "https://gomomentus.com/"},
+        {"name": "Sustainable Event Planning: Beyond the Basics - The Event Planner Expo", "url": "https://www.theeventplannerexpo.com/sustainable-event-planning-beyond-the-basics/"},
+        {"name": "10 Green Event Ideas That Can Make a Huge Difference - Cvent Blog", "url": "https://www.cvent.com/en/blog/events/green-event-ideas"},
     ]
     for resource in resources:
         st.markdown(f"• [{resource['name']}]({resource['url']})")
 
-def load_checklist():
-    return {
+def load_checklist(event_type):
+    # Common checklist items for all event types
+    common_checklist = {
         "Venue Selection": [
             ("Choose a venue with green certifications", False, False, "Look for LEED, BREEAM, or other sustainability certifications."),
             ("Select a location accessible by public transport", False, False, "This reduces the carbon footprint of attendee travel."),
-            ("Opt for venues with natural lighting", False, False, "This can significantly reduce energy consumption.")
+            ("Opt for venues with natural lighting", False, False, "This can significantly reduce energy consumption."),
+            ("Choose a venue with efficient HVAC systems", False, False, "This can significantly reduce energy consumption for heating and cooling.")
         ],
         "Energy and Water": [
             ("Use energy-efficient lighting and equipment", False, False, "LED lights and Energy Star certified equipment can greatly reduce energy use."),
             ("Implement water-saving measures", False, False, "Use low-flow faucets and toilets, and avoid bottled water."),
-            ("Offset energy use with renewable energy credits", False, False, "This can help neutralize your event's carbon footprint.")
+            ("Offset energy use with renewable energy credits", False, False, "This can help neutralize your event's carbon footprint."),
+            ("Use smart power strips and timers", False, False, "This can help reduce standby power consumption.")
         ],
         "Waste Management": [
             ("Provide clearly labeled recycling and composting bins", False, False, "Make it easy for attendees to dispose of waste properly."),
             ("Use digital materials instead of printed handouts", False, False, "This significantly reduces paper waste."),
-            ("Choose reusable or compostable serving ware", False, False, "Avoid single-use plastics and opt for sustainable alternatives.")
+            ("Choose reusable or compostable serving ware", False, False, "Avoid single-use plastics and opt for sustainable alternatives."),
+            ("Partner with local recycling and composting facilities", False, False, "Ensure proper disposal of waste after the event.")
         ],
         "Food and Beverage": [
             ("Offer plant-based and locally sourced food options", False, False, "This reduces the carbon footprint of your catering."),
             ("Use bulk dispensers for beverages", False, False, "This eliminates the need for individual bottles or cans."),
-            ("Donate excess food to local charities", False, False, "This reduces food waste and supports the local community.")
+            ("Donate excess food to local charities", False, False, "This reduces food waste and supports the local community."),
+            ("Choose organic and fair trade options when possible", False, False, "This supports sustainable agriculture and fair labor practices.")
         ],
         "Transportation": [
             ("Provide information on public transport options", False, False, "Encourage attendees to use eco-friendly transportation."),
             ("Offer virtual attendance options", False, False, "This can significantly reduce travel-related emissions."),
-            ("Arrange shared transportation for off-site activities", False, False, "This is more efficient than individual transportation.")
+            ("Arrange shared transportation for off-site activities", False, False, "This is more efficient than individual transportation."),
+            ("Encourage carpooling among attendees", False, False, "Set up a carpooling system to reduce individual car use.")
         ]
     }
+
+    # Event-specific checklist items
+    event_specific_items = {
+        "Conference or Seminar": {
+            "Technology": [
+                ("Use energy-efficient audiovisual equipment", False, False, "Choose equipment with power-saving modes."),
+                ("Offer virtual attendance options", False, False, "This can significantly reduce travel-related emissions."),
+                ("Provide digital conference materials", False, False, "Use apps or websites instead of printed programs."),
+                ("Implement a conference app for networking", False, False, "This can reduce the need for printed business cards and schedules.")
+            ],
+            "Session Planning": [
+                ("Include sustainability-focused sessions", False, False, "Educate attendees about sustainability in your industry."),
+                ("Use interactive polling to reduce paper use", False, False, "Digital polling can engage attendees without wasting paper."),
+                ("Offer workshops on sustainable practices", False, False, "Provide practical sustainability skills to attendees.")
+            ]
+        },
+        "Board Meeting": {
+            "Paper Reduction": [
+                ("Use digital voting systems", False, False, "Eliminate paper ballots for board decisions."),
+                ("Implement paperless document sharing", False, False, "Use secure digital platforms for sharing confidential documents."),
+                ("Provide tablets or laptops for document viewing", False, False, "This eliminates the need for printed documents during the meeting.")],
+            "Meeting Efficiency": [
+                ("Use video conferencing for remote participants", False, False, "This reduces travel-related emissions."),
+                ("Implement a strict agenda to reduce meeting time", False, False, "Shorter meetings consume less energy."),
+                ("Choose energy-efficient meeting room equipment", False, False, "Use low-power projectors and screens.")
+            ]
+        },
+        "Team Building Event": {
+            "Sustainable Activities": [
+                ("Choose eco-friendly team building activities", False, False, "Consider activities like park clean-ups or sustainable craft workshops."),
+                ("Use reusable name tags and team identifiers", False, False, "Avoid disposable items for team identification."),
+                ("Opt for outdoor activities when possible", False, False, "This can reduce energy consumption for indoor spaces."),
+                ("Incorporate sustainability education into activities", False, False, "Use the event as an opportunity to teach about environmental issues.")
+            ],
+            "Eco-friendly Rewards": [
+                ("Offer sustainable prizes or rewards", False, False, "Choose eco-friendly or locally made items as prizes."),
+                ("Provide digital certificates of participation", False, False, "Avoid printing paper certificates."),
+                ("Plant trees or donate to environmental causes in participants' names", False, False, "This creates a lasting positive impact.")
+            ]
+        },
+        "Product Launch": {
+            "Sustainable Promotion": [
+                ("Use eco-friendly promotional materials", False, False, "Choose recyclable or plantable promotional items."),
+                ("Highlight the product's sustainability features", False, False, "Educate attendees about the product's environmental impact."),
+                ("Implement digital product demonstrations", False, False, "Use screens or AR/VR to showcase products instead of physical samples."),
+                ("Offer sustainable packaging options", False, False, "If products are distributed, use minimal, recyclable packaging.")
+            ],
+            "Venue Setup": [
+                ("Use modular, reusable booth designs", False, False, "This reduces waste from single-use displays."),
+                ("Implement energy-efficient lighting for product displays", False, False, "Use LED lights to highlight products."),
+                ("Create a recycling plan for promotional materials", False, False, "Ensure that any distributed materials can be easily recycled.")
+            ]
+        },
+        "Annual General Meeting": {
+            "Shareholder Engagement": [
+                ("Offer online participation options", False, False, "Reduce travel emissions by allowing remote attendance and voting."),
+                ("Provide sustainability reports digitally", False, False, "Avoid printing large reports by offering digital versions."),
+                ("Use an event app for agenda and voting", False, False, "This can replace printed materials and paper ballots."),
+                ("Stream the meeting live for remote shareholders", False, False, "This allows participation without travel.")
+            ],
+            "Sustainable Presentations": [
+                ("Use energy-efficient presentation equipment", False, False, "Choose projectors and screens with low power consumption."),
+                ("Provide digital access to all meeting documents", False, False, "Allow shareholders to view documents on their own devices."),
+                ("Include a sustainability progress report in the agenda", False, False, "Highlight the company's environmental initiatives.")
+            ]
+        },
+        "Trade Show or Exhibition": {
+            "Booth Design": [
+                ("Use sustainable materials for booth construction", False, False, "Choose recyclable or reusable booth materials."),
+                ("Implement energy-efficient lighting in booths", False, False, "Use LED lights and minimize unnecessary lighting."),
+                ("Design modular booth elements for reuse", False, False, "Create booth components that can be reconfigured for future events."),
+                ("Use digital displays instead of printed banners", False, False, "This allows for easy updates and reduces waste.")
+            ],
+            "Exhibitor Guidelines": [
+                ("Provide exhibitors with sustainability guidelines", False, False, "Encourage all exhibitors to follow eco-friendly practices."),
+                ("Offer incentives for sustainable booth designs", False, False, "Recognize and reward exhibitors who prioritize sustainability."),
+                ("Implement a waste reduction competition among exhibitors", False, False, "Encourage innovative ways to minimize waste."),
+                ("Facilitate booth material recycling post-event", False, False, "Provide clear guidelines and services for material disposal.")
+            ]
+        },
+        "Corporate Party or Celebration": {
+            "Sustainable Decorations": [
+                ("Use reusable or biodegradable decorations", False, False, "Avoid single-use plastic decorations."),
+                ("Choose local and seasonal flowers or plants", False, False, "Reduce transportation emissions and support local businesses."),
+                ("Implement energy-efficient mood lighting", False, False, "Use LED string lights or solar-powered options."),
+                ("Create decorations from recycled materials", False, False, "Engage employees in creating unique, sustainable decor.")
+            ],
+            "Entertainment": [
+                ("Choose local entertainers to reduce travel", False, False, "This supports the local community and reduces transportation emissions."),
+                ("Opt for acoustic performances when possible", False, False, "This can reduce energy use for sound systems."),
+                ("Implement a sustainability theme in activities", False, False, "Incorporate eco-friendly messages into party games or performances."),
+                ("Use digital photo booths instead of printed photos", False, False, "Allow guests to receive photos electronically.")
+            ]
+        }
+    }
+
+    # Combine common checklist with event-specific items
+    if event_type in event_specific_items:
+        common_checklist.update(event_specific_items[event_type])
+    
+    return common_checklist
+
+def load_eco_tips(event_type):
+    common_tips = [
+        "Use digital invitations and event materials to reduce paper waste.",
+        "Choose venues with natural lighting to reduce energy consumption.",
+        "Offer plant-based meal options to reduce the event's carbon footprint.",
+        "Use reusable name badges and collect them at the end of the event.",
+        "Partner with local, sustainable businesses for event services and supplies.",
+        "Implement a comprehensive recycling and composting program.",
+        "Educate attendees about the event's sustainability initiatives.",
+        "Choose venues that have strong sustainability policies in place.",
+        "Minimize swag and opt for useful, sustainable items if necessary.",
+        "Conduct a post-event sustainability assessment to improve future events."
+    ]
+
+    event_specific_tips = {
+        "Conference or Seminar": [
+            "Encourage speakers to use digital presentations instead of handouts.",
+            "Set up a dedicated app for the conference to reduce printed materials.",
+            "Offer virtual attendance options to reduce travel-related emissions.",
+            "Implement a 'green speaker' certification for presenters who follow sustainable practices.",
+            "Organize networking sessions around sustainability themes."
+        ],
+        "Board Meeting": [
+            "Implement a bring-your-own-device policy to reduce the need for printing.",
+            "Use video conferencing for board members who can't attend in person.",
+            "Choose a meeting venue close to where most board members are based.",
+            "Provide reusable water bottles or glasses instead of disposable options.",
+            "Implement paperless voting systems for board decisions."
+        ],
+        "Team Building Event": [
+            "Choose outdoor locations to reduce energy consumption.",
+            "Incorporate sustainability challenges into team building activities.",
+            "Use eco-friendly materials for any team building supplies or equipment.",
+            "Partner with local environmental organizations for volunteer activities.",
+            "Provide sustainable transportation options for team members."
+        ],
+        "Product Launch": [
+            "Use virtual or augmented reality for product demonstrations to reduce physical waste.",
+            "Offer digital goodie bags instead of physical ones.",
+            "Highlight the product's sustainability features in the launch presentation.",
+            "Use energy-efficient lighting and sound systems for the event.",
+            "Implement a product packaging return or recycling program at the launch."
+        ],
+        "Annual General Meeting": [
+            "Provide digital voting options to reduce paper use.",
+            "Stream the meeting live for shareholders who can't attend in person.",
+            "Offer incentives for shareholders who choose digital over printed materials.",
+            "Include a presentation on the company's sustainability initiatives.",
+            "Choose a central, easily accessible location to minimize travel."
+        ],
+        "Trade Show or Exhibition": [
+            "Design modular, reusable booth elements to reduce waste.",
+            "Use QR codes for information sharing instead of printed brochures.",
+            "Implement a 'green exhibitor' certification program.",
+            "Organize a sustainability award for the most eco-friendly booth.",
+            "Provide centralized recycling stations throughout the exhibition area."
+        ],
+        "Corporate Party or Celebration": [
+            "Choose venues that support local communities and sustainable practices.",
+            "Opt for e-tickets or app-based guest lists instead of paper tickets.",
+            "Use locally-sourced, seasonal ingredients for catering.",
+            "Implement a zero-waste policy for the event.",
+            "Donate leftover food to local charities or food banks."
+        ],
+        "Other Corporate Event": [
+            "Consider the unique aspects of your event and how to make them more sustainable.",
+            "Engage employees in brainstorming eco-friendly ideas for the event.",
+            "Implement a sustainability pledge for all event participants.",
+            "Create a green team to oversee the event's environmental initiatives.",
+            "Conduct a carbon footprint analysis and offset emissions."
+        ]
+    }
+
+    return common_tips + event_specific_tips.get(event_type, [])
 
 if __name__ == "__main__":
     main()
