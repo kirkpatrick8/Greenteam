@@ -29,13 +29,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load and save functions for progress tracking
+import json
+
 def load_progress():
     try:
         with open("progress.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-
+            content = f.read()
+            if not content.strip():
+                return {}  # Return empty dict if file is empty
+            return json.loads(content)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}  # Return empty dict if file is not found or has invalid JSON
 def save_progress(data):
     with open("progress.json", "w") as f:
         json.dump(data, f)
